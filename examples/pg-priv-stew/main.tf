@@ -83,8 +83,8 @@ module "project-factory" {
 
 module "sql_example_postgres_private_ip" {
 
-  source = "gruntwork-io/sql/google//examples/postgres-private-ip"
-  version = "0.4.0"//todo import this module locally
+  source = "../../terraform-google-sql"
+  # version = "0.4.0"//todo import this module locally
 
   # insert the 6 required variables here
   master_user_password = var.master_user_password
