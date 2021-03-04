@@ -1,17 +1,21 @@
 terraform {
-  required_version="0.14.7"
+  required_version = "0.14.7"
   required_providers {
-    google={
+    google = {
       version = "~> 3.30"
     }
-    
-    null={
 
-    version = "~> 2.1"
+    null = {
+
+      version = "~> 2.1"
     }
-    random={
-    version = "~> 2.2"
+    random = {
+      version = "~> 2.2"
+    }
   }
+  backend "gcs" {
+    bucket = "tf-backend-tq34"
+    prefix = "terraform/state"
   }
 }
 
@@ -26,14 +30,14 @@ locals {
  *****************************************/
 provider "google" {
   credentials = file(local.credentials_file_path)
-  
+
   region = var.region
   zone = var.zone
 }
 
 provider "google-beta" {
   credentials = file(local.credentials_file_path)
-  
+
   region = var.region
   zone = var.zone
 }
@@ -45,15 +49,15 @@ provider "random" {
 }
 
 resource "random_string" "db_suffix" {
-  length  = 4
+  length = 4
   special = false
-  upper   = false
+  upper = false
 }
 
 resource "random_string" "app_engine_backend_suffix" {
-  length  = 4
+  length = 4
   special = false
-  upper   = false
+  upper = false
 }
 
 module "project-factory" {
@@ -65,7 +69,7 @@ module "project-factory" {
   credentials_path = local.credentials_file_path
   default_service_account = "deprivilege"
 
-  activate_apis=[
+  activate_apis = [
     "servicenetworking.googleapis.com",
     "compute.googleapis.com",
     "appengine.googleapis.com"
@@ -77,20 +81,19 @@ module "project-factory" {
         "roles/servicenetworking.serviceAgent",
       ]
     },
-    ]
+  ]
 }
 
 
 module "sql_example_postgres_private_ip" {
 
-  source = "../../terraform-google-sql"
-  # version = "0.4.0"//todo import this module locally
+  source = "../../terraform-google-sql" // from git submodule clone in root
 
   # insert the 6 required variables here
   master_user_password = var.master_user_password
   project = module.project-factory.project_id
   region = var.region
-  postgres_version="POSTGRES_13"
+  postgres_version = "POSTGRES_13"
   db_name = "${var.db_name}-${random_string.db_suffix.id}"
 
   name_prefix = var.namespace
@@ -101,8 +104,9 @@ module "sql_example_postgres_private_ip" {
 }
 
 resource "google_vpc_access_connector" "connector" {
-  name          = "priv-db-vpc-con"
-  ip_cidr_range = "${module.sql_example_postgres_private_ip.master_private_ip}/28" //
-  network       = module.sql_example_postgres_private_ip.private_ip_name
+  name = "priv-db-vpc-con"
+  ip_cidr_range = "${module.sql_example_postgres_private_ip.master_private_ip}/28"
+  //
+  network = module.sql_example_postgres_private_ip.master_private_ip
 }
 
